@@ -457,7 +457,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import RouteForm from '@/components/onboard/routes/src/components/RouteForm.vue'
+import RouteForm from './RouteForm.vue'
 
 // Props
 const props = defineProps<{
@@ -658,7 +658,12 @@ const isFormValid = computed(() => {
     validationErrors: validationErrors.value,
     isFormValid: isValid,
     routeHost: routeConfig.host,
-    routeMethods: routeConfig.methods
+    routeMethods: routeConfig.methods,
+    routeProtocols: routeConfig.protocols,
+    routePreserveHost: routeConfig.preserveHost,
+    generalInfoName: generalInfo.name,
+    serviceConfigType: serviceConfig.type,
+    serviceConfigUrl: serviceConfig.url
   })
   return isValid
 })
@@ -1537,6 +1542,35 @@ const onSubmitForApproval = async () => {
 .view-config-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.submit-btn {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .save-btn {
