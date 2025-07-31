@@ -6,6 +6,7 @@
     <title>Service Form Test</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="auth-helper.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -77,6 +78,7 @@
                         <li><strong>6.</strong> Choose Preserve Host option (required)</li>
                         <li><strong>7.</strong> The Submit button should become enabled</li>
                         <li><strong>8.</strong> Check the browser console for validation logs</li>
+                        <li><strong>9.</strong> For testing without real API calls, run: <code>authHelper.setupForTesting()</code> in console</li>
                     </ul>
                 </div>
                 

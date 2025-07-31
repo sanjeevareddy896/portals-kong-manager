@@ -771,6 +771,15 @@ const onSubmitForApproval = async () => {
     return
   }
   
+  // Check if user is authenticated
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+  const apiKey = localStorage.getItem('apiKey') || sessionStorage.getItem('apiKey')
+  
+  if (!authToken && !apiKey) {
+    alert('Authentication required. Please log in and try again.')
+    return
+  }
+  
   try {
     // Manually sync route data from RouteForm component
     if (routeFormRef.value && routeFormRef.value.formData) {
@@ -804,9 +813,21 @@ const onSubmitForApproval = async () => {
     if (props.isEditMode || Object.keys(emit).length > 0) {
       console.log('Emitting form data to parent component')
       emit('submit', approvalRequest)
+    } else if (process.env.NODE_ENV === 'development' || localStorage.getItem('testMode') === 'true') {
+      // Test mode - simulate successful submission
+      console.log('Test mode: Simulating successful submission')
+      console.log('Approval request data:', JSON.stringify(approvalRequest, null, 2))
+      alert(`Test mode: Service request "${generalInfo.name}" would be submitted successfully!`)
+      router.push('/service-requests')
     } else {
     // Submit to approval system (use the correct backend endpoint)
-    await axios.post('/api/service-approval-requests', approvalRequest)
+    await axios.post('/api/service-approval-requests', approvalRequest, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+        'X-API-Key': localStorage.getItem('apiKey') || sessionStorage.getItem('apiKey')
+      }
+    })
     
     // Show success message
     alert(`Service request "${generalInfo.name}" submitted for approval successfully!`)
@@ -817,7 +838,22 @@ const onSubmitForApproval = async () => {
     
   } catch (error: any) {
     console.error('Failed to submit approval request:', error)
-    alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+    
+    let errorMessage = 'Failed to submit approval request'
+    
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please check your login credentials and try again.'
+    } else if (error.response?.status === 403) {
+      errorMessage = 'Access denied. You do not have permission to submit this request.'
+    } else if (error.response?.status === 404) {
+      errorMessage = 'API endpoint not found. Please contact your administrator.'
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    alert(errorMessage)
   }
 }
 </script>
