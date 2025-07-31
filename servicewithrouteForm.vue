@@ -459,6 +459,16 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import RouteForm from '@/components/onboard/routes/src/components/RouteForm.vue'
 
+// Configure axios with authentication
+const apiClient = axios.create({
+  baseURL: process.env.VUE_APP_API_BASE_URL || 'https://portals-kong-manager-int.golabs.io',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}`,
+    'X-API-Key': process.env.VUE_APP_API_KEY || localStorage.getItem('apiKey')
+  }
+})
+
 // Props
 const props = defineProps<{
   initialData?: any
@@ -801,7 +811,7 @@ const onSubmitForApproval = async () => {
       emit('submit', approvalRequest)
     } else {
     // Submit to approval system (use the correct backend endpoint)
-    await axios.post('/api/service-approval-requests', approvalRequest)
+    await apiClient.post('/api/service-approval-requests', approvalRequest)
     
     // Show success message
     alert(`Service request "${generalInfo.name}" submitted for approval successfully!`)
@@ -812,7 +822,15 @@ const onSubmitForApproval = async () => {
     
   } catch (error: any) {
     console.error('Failed to submit approval request:', error)
-    alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+    
+    // Handle authentication errors specifically
+    if (error.response?.status === 401) {
+      alert('Authentication failed. Please check your login status and try again.')
+      // Optionally redirect to login page
+      // router.push('/login')
+    } else {
+      alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+    }
   }
 }
 </script>
