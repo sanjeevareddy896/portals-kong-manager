@@ -473,6 +473,31 @@ const emit = defineEmits<{
 
 const router = useRouter()
 
+// Helper function to get current user from auth system
+const getCurrentUser = () => {
+  // Try to get user info from localStorage/sessionStorage
+  const userInfo = localStorage.getItem('userInfo') || sessionStorage.getItem('userInfo')
+  if (userInfo) {
+    try {
+      const parsed = JSON.parse(userInfo)
+      return parsed.username || parsed.email || parsed.id || 'unknown-user'
+    } catch (e) {
+      console.warn('Failed to parse user info:', e)
+    }
+  }
+  
+  // Try to get username from localStorage
+  const username = localStorage.getItem('username') || sessionStorage.getItem('username')
+  if (username) return username
+  
+  // Try to get email from localStorage
+  const email = localStorage.getItem('email') || sessionStorage.getItem('email')
+  if (email) return email
+  
+  // Fallback to 'unknown-user'
+  return 'unknown-user'
+}
+
 // State
 const showServiceAdvanced = ref(false)
 const showRouteAdvanced = ref(false)
@@ -784,7 +809,7 @@ const onSubmitForApproval = async () => {
       service: servicePayload,
       route: routePayload,
       status: 'pending',
-      requestedBy: 'current-user', // TODO: Get from auth system
+      requestedBy: getCurrentUser(), // Get from auth system
       requestedAt: new Date().toISOString(),
       description: `Service and route creation request for "${generalInfo.name}"`
     }
@@ -801,7 +826,21 @@ const onSubmitForApproval = async () => {
       emit('submit', approvalRequest)
     } else {
     // Submit to approval system (use the correct backend endpoint)
-    await axios.post('/api/service-approval-requests', approvalRequest)
+    // Get authentication token from localStorage or session storage
+    const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('token')
+    
+    const headers: any = {
+      'Content-Type': 'application/json'
+    }
+    
+    // Add authorization header if token exists
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+    
+    await axios.post('/api/service-approval-requests', approvalRequest, {
+      headers
+    })
     
     // Show success message
     alert(`Service request "${generalInfo.name}" submitted for approval successfully!`)
@@ -812,7 +851,15 @@ const onSubmitForApproval = async () => {
     
   } catch (error: any) {
     console.error('Failed to submit approval request:', error)
-    alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      alert('Authentication failed. Please log in again to submit the approval request.')
+    } else if (error.response?.status === 403) {
+      alert('You do not have permission to submit approval requests. Please contact your administrator.')
+    } else {
+      alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+    }
   }
 }
 </script>
