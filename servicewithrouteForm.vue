@@ -498,6 +498,52 @@ const getCurrentUser = () => {
   return 'unknown-user'
 }
 
+// Helper function to get authentication token
+const getAuthToken = () => {
+  const token = localStorage.getItem('authToken') || 
+                sessionStorage.getItem('authToken') || 
+                localStorage.getItem('token') || 
+                sessionStorage.getItem('token')
+  
+  if (!token) {
+    console.warn('No authentication token found in storage')
+    return null
+  }
+  
+  return token
+}
+
+// Helper function to check if user is authenticated
+const isAuthenticated = () => {
+  const token = getAuthToken()
+  return !!token
+}
+
+// Debug function to check authentication state
+const debugAuthState = () => {
+  console.log('=== Authentication Debug Info ===')
+  console.log('Is authenticated:', isAuthenticated())
+  console.log('Auth token exists:', !!getAuthToken())
+  console.log('Token keys in storage:', {
+    localStorage: {
+      authToken: !!localStorage.getItem('authToken'),
+      token: !!localStorage.getItem('token'),
+      userInfo: !!localStorage.getItem('userInfo'),
+      username: !!localStorage.getItem('username'),
+      email: !!localStorage.getItem('email')
+    },
+    sessionStorage: {
+      authToken: !!sessionStorage.getItem('authToken'),
+      token: !!sessionStorage.getItem('token'),
+      userInfo: !!sessionStorage.getItem('userInfo'),
+      username: !!sessionStorage.getItem('username'),
+      email: !!sessionStorage.getItem('email')
+    }
+  })
+  console.log('Current user:', getCurrentUser())
+  console.log('===============================')
+}
+
 // State
 const showServiceAdvanced = ref(false)
 const showRouteAdvanced = ref(false)
@@ -826,17 +872,24 @@ const onSubmitForApproval = async () => {
       emit('submit', approvalRequest)
     } else {
     // Submit to approval system (use the correct backend endpoint)
-    // Get authentication token from localStorage or session storage
-    const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('token')
+    // Debug authentication state
+    debugAuthState()
+    
+    // Check authentication first
+    if (!isAuthenticated()) {
+      alert('You are not authenticated. Please log in to submit approval requests.')
+      return
+    }
+    
+    const authToken = getAuthToken()
     
     const headers: any = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
     }
     
-    // Add authorization header if token exists
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`
-    }
+    // Log the token for debugging (remove in production)
+    console.log('Using auth token:', authToken?.substring(0, 20) + '...')
     
     await axios.post('/api/service-approval-requests', approvalRequest, {
       headers
@@ -854,6 +907,15 @@ const onSubmitForApproval = async () => {
     
     // Handle specific error cases
     if (error.response?.status === 401) {
+      console.error('401 Unauthorized - Token details:', {
+        hasToken: !!localStorage.getItem('authToken') || !!sessionStorage.getItem('authToken') || !!localStorage.getItem('token') || !!sessionStorage.getItem('token'),
+        tokenKeys: {
+          authToken: localStorage.getItem('authToken') ? 'exists' : 'missing',
+          sessionAuthToken: sessionStorage.getItem('authToken') ? 'exists' : 'missing',
+          token: localStorage.getItem('token') ? 'exists' : 'missing',
+          sessionToken: sessionStorage.getItem('token') ? 'exists' : 'missing'
+        }
+      })
       alert('Authentication failed. Please log in again to submit the approval request.')
     } else if (error.response?.status === 403) {
       alert('You do not have permission to submit approval requests. Please contact your administrator.')
