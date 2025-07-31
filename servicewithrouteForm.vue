@@ -766,6 +766,8 @@ const onSubmitForApproval = async () => {
     return
   }
   
+  loading.value = true
+  
   try {
     // Manually sync route data from RouteForm component
     if (routeFormRef.value && routeFormRef.value.formData) {
@@ -800,19 +802,21 @@ const onSubmitForApproval = async () => {
       console.log('Emitting form data to parent component')
       emit('submit', approvalRequest)
     } else {
-    // Submit to approval system (use the correct backend endpoint)
-    await axios.post('/api/service-approval-requests', approvalRequest)
-    
-    // Show success message
-    alert(`Service request "${generalInfo.name}" submitted for approval successfully!`)
-    
-    // Redirect to service requests page
-    router.push('/service-requests')
+      // Submit to approval system (use the correct backend endpoint)
+      await axios.post('/api/service-approval-requests', approvalRequest)
+      
+      // Show success message
+      alert(`Service request "${generalInfo.name}" submitted for approval successfully!`)
+      
+      // Redirect to service requests page
+      router.push('/service-requests')
     }
     
   } catch (error: any) {
     console.error('Failed to submit approval request:', error)
     alert(`Failed to submit approval request: ${error.response?.data?.message || error.message}`)
+  } finally {
+    loading.value = false
   }
 }
 </script>
